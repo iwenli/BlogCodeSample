@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webapi", "webapi\webapi.csproj", "{0A25EE09-08C4-4B2E-AFFF-9346AABAC9BB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UploadFile", "UploadFile\UploadFile.csproj", "{1D908C33-9A8C-4916-98E8-AA9725B5D77E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,17 @@ Global
 		{0A25EE09-08C4-4B2E-AFFF-9346AABAC9BB}.Release|x64.Build.0 = Release|Any CPU
 		{0A25EE09-08C4-4B2E-AFFF-9346AABAC9BB}.Release|x86.ActiveCfg = Release|Any CPU
 		{0A25EE09-08C4-4B2E-AFFF-9346AABAC9BB}.Release|x86.Build.0 = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|x64.Build.0 = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D908C33-9A8C-4916-98E8-AA9725B5D77E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

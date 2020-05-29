@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "上传文件";
+}
+
+<div class="text-center">
+    <h1 class="display-4">上传文件</h1>
+    <form method="post" enctype="multipart/form-data" asp-controller="Home" asp-action="Post">
+    <div class="form-group">
+        <div class="col-md-10">
+            <p>使用此表单上传一个或多个文件:</p>
+            <input type="file" name="files" multiple />
+        </div>
+    </div>
+    <div>
+        <div class="form-group">
+            <div class="col-md-10">
+                <input type="submit" value="上传" />
+            </div>
+        </div>
+    </div>
+</form>
+</div>
