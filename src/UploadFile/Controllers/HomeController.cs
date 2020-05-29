@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Server.IIS.Core;
 
 namespace UploadFile.Controllers
 {
+    // https://wakeupandcode.com/azure-blob-storage-from-asp-net-core-file-upload/
     public class HomeController : Controller
     {
         private IConfiguration _configuration;
@@ -73,20 +74,21 @@ namespace UploadFile.Controllers
 
                 // NOTE: 取消对选项A或选项B的注释以使用一种方法而不是另一种方法
 
-                //OPTION A: convert to byte array before upload
-                using (var ms = new MemoryStream())
-                {
-                    formFile.CopyTo(ms);
-                    var fileBytes = ms.ToArray();
-                    (uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, fileBytes);
-                }
-
-                //// OPTION B: read directly from stream for blob upload      
-                //using (var stream = formFile.OpenReadStream())
+                ////OPTION A: convert to byte array before upload
+                //using (var ms = new MemoryStream())
                 //{
-                //    (uploadSuccess, uploadedUri) = await UploadToBlob(formFile.FileName, null, stream);
-                //    TempData["uploadedUri"] = uploadedUri;
+                //    formFile.CopyTo(ms);
+                //    var fileBytes = ms.ToArray();
+                //    (uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, fileBytes);
                 //}
+
+                // OPTION B: read directly from stream for blob upload      
+                using (var stream = formFile.OpenReadStream())
+                {
+                    //(uploadSuccess, uploadedUri) = await UploadToBlob(formFile.FileName, null, stream);
+                    (uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, stream);
+                    TempData["uploadedUri"] = uploadedUri;
+                }
 
             }
 
@@ -96,15 +98,15 @@ namespace UploadFile.Controllers
                 return View("UploadError");
         }
 
-        private async Task<(bool, string)> UploadToTx(string filename, byte[] imageBuffer = null)
+        private async Task<(bool, string)> UploadToTx(string filename, Stream stream = null)
         {
             try
             {
-                if (imageBuffer == null)
+                if ( stream == null)
                 {
                     return (false, null);
                 }
-                using (HttpContent content = new ByteArrayContent(imageBuffer))
+                using (HttpContent content = new StreamContent(stream))
                 {
                     content.Headers.Add("TxoooUploadFileType", Path.GetExtension(filename).ToUpper());
                     var client = clientFactory.CreateClient("TxFile");
