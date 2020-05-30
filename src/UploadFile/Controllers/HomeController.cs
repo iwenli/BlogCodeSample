@@ -11,6 +11,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Net.Http;
 using Microsoft.AspNetCore.Server.IIS.Core;
+using Microsoft.AspNetCore.Hosting;
+using System.Linq;
 
 namespace UploadFile.Controllers
 {
@@ -18,14 +20,17 @@ namespace UploadFile.Controllers
     public class HomeController : Controller
     {
         private IConfiguration _configuration;
-        private readonly IHttpClientFactory clientFactory;
+        private readonly IHttpClientFactory _clientFactory;
+        private readonly IWebHostEnvironment _env;
 
         public HomeController(
-            IConfiguration Configuration
-            , IHttpClientFactory clientFactory)
+            IConfiguration configuration
+            , IHttpClientFactory clientFactory
+            , IWebHostEnvironment env)
         {
-            _configuration = Configuration;
-            this.clientFactory = clientFactory;
+            _configuration = configuration;
+            _clientFactory = clientFactory;
+            _env = env;
         }
 
         public IActionResult Index()
@@ -35,12 +40,12 @@ namespace UploadFile.Controllers
 
         // https://localhost:5001/uploadfilebyurl?url=http://img.txooo.com/2020/05/08/2b5b9903278597812939d96879cb3ec2.jpg
         [HttpGet("UploadFileByUrl")]
-        public async Task<IActionResult> UploadFileByUrl([FromQuery]string url)
+        public async Task<IActionResult> UploadFileByUrl([FromQuery] string url)
         {
             if (string.IsNullOrWhiteSpace(url))
                 return BadRequest();
 
-            var client = clientFactory.CreateClient("TxFile");
+            var client = _clientFactory.CreateClient("TxFile");
             var response = await client.GetStringAsync("UpLoadForByte.ashx?tx_down_url=" + url);
             if (response.Equals("Error", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -72,24 +77,20 @@ namespace UploadFile.Controllers
                     continue;
                 }
 
-                // NOTE: 取消对选项A或选项B的注释以使用一种方法而不是另一种方法
 
-                ////OPTION A: convert to byte array before upload
-                //using (var ms = new MemoryStream())
-                //{
-                //    formFile.CopyTo(ms);
-                //    var fileBytes = ms.ToArray();
-                //    (uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, fileBytes);
-                //}
+                await using var memoryStream = new MemoryStream();
+                await formFile.CopyToAsync(memoryStream);
 
-                // OPTION B: read directly from stream for blob upload      
-                using (var stream = formFile.OpenReadStream())
-                {
-                    //(uploadSuccess, uploadedUri) = await UploadToBlob(formFile.FileName, null, stream);
-                    (uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, stream);
-                    TempData["uploadedUri"] = uploadedUri;
-                }
+                // OPTION A: Tx CND
+                //(uploadSuccess, uploadedUri) = await UploadToTx(formFile.FileName, memoryStream);
 
+                // OPTION B: azureCloud     
+                //(uploadSuccess, uploadedUri) = await UploadToBlob(formFile.FileName, null, memoryStream);
+
+                // OPTION C: LocalStorage   
+                (uploadSuccess, uploadedUri) = await UploadToLocalStorage(formFile.FileName, memoryStream);
+
+                TempData["uploadedUri"] = uploadedUri;
             }
 
             if (uploadSuccess)
@@ -97,46 +98,52 @@ namespace UploadFile.Controllers
             else
                 return View("UploadError");
         }
-
-        private async Task<(bool, string)> UploadToTx(string filename, Stream stream = null)
+        private async Task<(bool, string)> UploadToLocalStorage(string filename, MemoryStream stream = null)
         {
-            try
-            {
-                if ( stream == null)
-                {
-                    return (false, null);
-                }
-                using (HttpContent content = new StreamContent(stream))
-                {
-                    content.Headers.Add("TxoooUploadFileType", Path.GetExtension(filename).ToUpper());
-                    var client = clientFactory.CreateClient("TxFile");
-                    var response = await client.PostAsync("UpLoadForByte.ashx", content);
-                    if (response != null && response.IsSuccessStatusCode)
-                    {
-                        var responseStr = await response.Content.ReadAsStringAsync();
-                        if (responseStr.Equals("Error", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            return (false, "远程服务器异常");
-                        }
-                        return (true, responseStr.Replace("http:", "https:"));
-                    }
-                    else
-                    {
-                        return (false, $"远程服务器请求失败，{response.StatusCode}");
-                    }
-                }
-            }
-            catch (StorageException ex)
+            if (stream == null)
             {
                 return (false, null);
             }
-            finally
+
+            // 
+
+            var rootPath = Path.Join(_env.ContentRootPath, "FileUploads");
+            if (!Directory.Exists(rootPath)) Directory.CreateDirectory(rootPath);
+
+            var imageName = $"img_{DateTime.UtcNow:yyyy_MM_dd}_{ BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(stream)).Replace("-", "")}{Path.GetExtension(filename)}";
+
+            var imageFullName = Path.Join(rootPath, imageName);
+            if (!System.IO.File.Exists(imageFullName))
             {
-                // OPTIONAL: Clean up resources, e.g. blob container
-                //if (cloudBlobContainer != null)
-                //{
-                //    await cloudBlobContainer.DeleteIfExistsAsync();
-                //}
+                await System.IO.File.WriteAllBytesAsync(imageFullName, stream.ToArray());
+            }
+
+            return (true, imageName);
+        }
+        private async Task<(bool, string)> UploadToTx(string filename, Stream stream = null)
+        {
+            if (stream == null)
+            {
+                return (false, null);
+            }
+            using (HttpContent content = new StreamContent(stream))
+            {
+                content.Headers.Add("TxoooUploadFileType", Path.GetExtension(filename).ToUpper());
+                var client = _clientFactory.CreateClient("TxFile");
+                var response = await client.PostAsync("UpLoadForByte.ashx", content);
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    var responseStr = await response.Content.ReadAsStringAsync();
+                    if (responseStr.Equals("Error", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        return (false, "远程服务器异常");
+                    }
+                    return (true, responseStr.Replace("http:", "https:"));
+                }
+                else
+                {
+                    return (false, $"远程服务器请求失败，{response.StatusCode}");
+                }
             }
         }
 
