@@ -31,7 +31,7 @@ namespace UploadFile
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddHttpClient("TxFile", c =>
+            services.AddHttpClient("CdnClient", c =>
             {
                 c.BaseAddress = new Uri("http://file.txooo.cc/");
                 c.Timeout = TimeSpan.FromSeconds(30);//超时间时间设置为30秒
